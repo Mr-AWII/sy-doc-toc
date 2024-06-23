@@ -140,11 +140,7 @@ if (!name || name === '') {
 }
 
 //dev directory
-const devDir = `${process.cwd()}/dev`;
-//mkdir if not exists
-if (!fs.existsSync(devDir)) {
-    fs.mkdirSync(devDir);
-}
+const devDir = `${process.cwd()}`;
 
 function cmpPath(path1, path2) {
     path1 = path1.replace(/\\/g, '/');
