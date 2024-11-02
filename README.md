@@ -8,3 +8,5 @@ The inserted TOC outline is a list block of header links, such as:
 * [Title 2](siyuan://blocks/block-id-4)
   * [Subtitle 2.1](siyuan://blocks/block-id-5)
 ```
+
+The inserted TOC list block will automatically add the `custom-is-toc-list` attribute; clicking on the block menu will allow you to update the TOC in the plugin menu.

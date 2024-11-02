@@ -8,3 +8,5 @@
 * [标题2](siyuan://blocks/block-id-4)
   * [子标题2.1](siyuan://blocks/block-id-5)
 ```
+
+插入的大纲列表块会自动添加 `custom-is-toc-list` 属性；鼠标点击块菜单，可以在插件菜单中「更新大纲」。
