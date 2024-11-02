@@ -3,7 +3,7 @@
  * @Author       : frostime
  * @Date         : 2023-11-14 12:02:16
  * @FilePath     : /index.js
- * @LastEditTime : 2024-11-02 14:46:25
+ * @LastEditTime : 2024-11-02 15:51:51
  * @Description  : A minimal plugin for SiYuan, relies only on nothing but pure index.js.
  *                 Refer to https://docs.siyuan-note.club/zh-Hans/guide/plugin/five-minutes-quick-start.html
  */
@@ -14,6 +14,17 @@ async function request(url, data) {
     let response = await siyuan.fetchSyncPost(url, data);
     let res = response.code === 0 ? response.data : null;
     return res;
+}
+
+const getCurrentNode = () => {
+    const selection = window.getSelection();
+    const range = selection.getRangeAt(0);
+    let currentEle = range.endContainer;
+    // 如果是 text 节点，则向上找最近的 node 节点
+    while (currentEle.nodeType === 3) {
+        currentEle = currentEle.parentNode;
+    }
+    return currentEle.closest('div[data-node-id]');
 }
 
 module.exports = class TocPlugin extends siyuan.Plugin {
@@ -52,11 +63,29 @@ module.exports = class TocPlugin extends siyuan.Plugin {
                     }
                     let tocs = iterate(ans);
                     let md = tocs.join('\n');
-                    protyle.insert(md, true);
+                    // protyle.insert 似乎无法正常插入公式, 所以换成 insertBlock
+                    // protyle.insert(md, true);
 
-                    setTimeout(() => {
-                        protyle.reload();
-                    }, 1000)
+                    const currentNode = getCurrentNode();
+                    const currentNodeID = currentNode.getAttribute('data-node-id');
+                    protyle.insert(window.Lute.Caret, false, false);
+
+                    const currentNodeContent = currentNode.querySelector('[contenteditable="true"]').innerHTML.trim();
+                    if (currentNodeContent === '') {
+                        request('/api/block/updateBlock', {
+                            dataType: 'markdown',
+                            data: md,
+                            id: currentNodeID
+                        });
+                    } else {
+                        request('/api/block/insertBlock', {
+                            dataType: 'markdown',
+                            data: md,
+                            previousID: currentNodeID,
+                            nextID: "",
+                            parentID: ""
+                        });
+                    }
                 });
             }
         });
