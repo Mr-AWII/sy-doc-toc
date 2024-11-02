@@ -3,7 +3,7 @@
  * @Author       : frostime
  * @Date         : 2023-11-14 12:02:16
  * @FilePath     : /index.js
- * @LastEditTime : 2024-06-23 22:21:19
+ * @LastEditTime : 2024-11-02 14:46:25
  * @Description  : A minimal plugin for SiYuan, relies only on nothing but pure index.js.
  *                 Refer to https://docs.siyuan-note.club/zh-Hans/guide/plugin/five-minutes-quick-start.html
  */
@@ -19,11 +19,14 @@ async function request(url, data) {
 module.exports = class TocPlugin extends siyuan.Plugin {
 
     async onload() {
+        const lute = window.Lute.New();
+
         this.protyleSlash.push({
             filter: ['toc', 'outline'],
             html: this.i18n.hint,
             id: 'toc',
             callback: (protyle) => {
+                // const element = protyle.protyle.element;
                 request('/api/outline/getDocOutline', {
                     id: protyle.protyle.block.rootID
                 }).then((ans) => {
@@ -35,7 +38,11 @@ module.exports = class TocPlugin extends siyuan.Plugin {
                     const iterate = (data) => {
                         let toc = [];
                         for (let item of data) {
-                            toc.push(`${'  '.repeat(item.depth)} * [${item.name || item.content}](siyuan://blocks/${item.id})`);
+                            let text = item.name || item.content;
+                            text = lute.BlockDOM2Md(text);
+                            text = text.trim();
+                            toc.push(`${'  '.repeat(item.depth)} * [${text}](siyuan://blocks/${item.id})`);
+                            console.debug(toc[toc.length - 1]);
                             if (item.count > 0) {
                                 let subtocs = iterate(item.blocks ?? item.children);
                                 toc = toc.concat(subtocs);
@@ -46,6 +53,10 @@ module.exports = class TocPlugin extends siyuan.Plugin {
                     let tocs = iterate(ans);
                     let md = tocs.join('\n');
                     protyle.insert(md, true);
+
+                    setTimeout(() => {
+                        protyle.reload();
+                    }, 1000)
                 });
             }
         });

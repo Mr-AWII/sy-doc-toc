@@ -2,7 +2,7 @@
   "name": "sy-doc-toc",
   "author": "frostime",
   "url": "https://github.com/frostime/sy-doc-toc",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "minAppVersion": "2.10.0",
   "backends": [
     "all"
@@ -22,9 +22,10 @@
     "en_US": "README.md",
     "zh_CN": "README_zh_CN.md"
   },
-  "funding": {
-  },
+  "funding": {},
   "keywords": [
-    "plugin", "toc", "outline"
+    "plugin",
+    "toc",
+    "outline"
   ]
 }
