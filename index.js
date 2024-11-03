@@ -3,7 +3,7 @@
  * @Author       : frostime
  * @Date         : 2023-11-14 12:02:16
  * @FilePath     : /index.js
- * @LastEditTime : 2024-11-02 20:46:42
+ * @LastEditTime : 2024-11-03 14:58:28
  * @Description  : A minimal plugin for SiYuan, relies only on nothing but pure index.js.
  *                 Refer to https://docs.siyuan-note.club/zh-Hans/guide/plugin/five-minutes-quick-start.html
  */
@@ -29,6 +29,8 @@ const getCurrentNode = () => {
 
 const TOC_ATTR_NAME = 'custom-is-toc-list';
 
+const EMOJI_LINK = '🔗';
+
 
 const buildDocToc = (docId, lute, callback) => {
     request('/api/outline/getDocOutline', {
@@ -43,10 +45,15 @@ const buildDocToc = (docId, lute, callback) => {
         const iterate = (data) => {
             let toc = [];
             for (let item of data) {
+                let li = '';
                 let text = item.name || item.content;
-                text = lute.BlockDOM2Md(text);
-                text = text.trim();
-                toc.push(`${'  '.repeat(item.depth)} * [${text}](siyuan://blocks/${item.id})`);
+                let parsedText = lute.BlockDOM2Md(text).trim();
+                if (text !== parsedText) {
+                    li = `* ${parsedText}[${EMOJI_LINK}](siyuan://blocks/${item.id})`;
+                } else {
+                    li = `* [${text}](siyuan://blocks/${item.id})`;
+                }
+                toc.push(`${'  '.repeat(item.depth)} ${li}`);
                 console.debug(toc[toc.length - 1]);
                 if (item.count > 0) {
                     let subtocs = iterate(item.blocks ?? item.children);
