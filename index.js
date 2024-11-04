@@ -3,7 +3,7 @@
  * @Author       : frostime
  * @Date         : 2023-11-14 12:02:16
  * @FilePath     : /index.js
- * @LastEditTime : 2024-11-03 14:58:28
+ * @LastEditTime : 2024-11-03 18:35:03
  * @Description  : A minimal plugin for SiYuan, relies only on nothing but pure index.js.
  *                 Refer to https://docs.siyuan-note.club/zh-Hans/guide/plugin/five-minutes-quick-start.html
  */
@@ -31,6 +31,20 @@ const TOC_ATTR_NAME = 'custom-is-toc-list';
 
 const EMOJI_LINK = '🔗';
 
+function decodeHTMLEntities(text) {
+    const entityMap = {
+        '&amp;': '&',
+        '&lt;': '<',
+        '&gt;': '>',
+        '&quot;': '"',
+        '&apos;': "'",
+        '&nbsp;': ' ',
+        '&#39;': "'",
+        '&#x27;': "'"
+    };
+
+    return text.replace(/&[^;]+;/g, match => entityMap[match] || match);
+}
 
 const buildDocToc = (docId, lute, callback) => {
     request('/api/outline/getDocOutline', {
@@ -38,31 +52,51 @@ const buildDocToc = (docId, lute, callback) => {
     }).then(async (ans) => {
         if (!ans) {
             siyuan.showMessage('TOC: Empty', 3000, 'error');
-            // protyle.insert(window.Lute.Caret, false, false); //插入特殊字符清除 slash
             callback([]);
             return;
         }
-        const iterate = (data) => {
-            let toc = [];
+
+        // 第一步：收集所有标题信息
+        const collectTitles = (data) => {
+            let titles = [];
             for (let item of data) {
-                let li = '';
-                let text = item.name || item.content;
-                let parsedText = lute.BlockDOM2Md(text).trim();
-                if (text !== parsedText) {
-                    li = `* ${parsedText}[${EMOJI_LINK}](siyuan://blocks/${item.id})`;
-                } else {
-                    li = `* [${text}](siyuan://blocks/${item.id})`;
-                }
-                toc.push(`${'  '.repeat(item.depth)} ${li}`);
-                console.debug(toc[toc.length - 1]);
+                let text = (item.name || item.content).trim();
+                text = decodeHTMLEntities(text);
+                const parsedText = lute.BlockDOM2Md(text).trim();
+                titles.push({
+                    text,
+                    parsedText,
+                    id: item.id,
+                    depth: item.depth,
+                    needParse: text !== parsedText
+                });
+
                 if (item.count > 0) {
-                    let subtocs = iterate(item.blocks ?? item.children);
-                    toc = toc.concat(subtocs);
+                    titles = titles.concat(collectTitles(item.blocks ?? item.children));
                 }
             }
-            return toc;
+            return titles;
         }
-        let tocs = iterate(ans);
+
+        // 收集所有标题
+        const titles = collectTitles(ans);
+
+        // 检查是否需要特殊处理
+        const needSpecialFormat = titles.some(item => item.needParse);
+
+        // 构建最终的TOC
+        const tocs = titles.map(item => {
+            let li;
+            if (needSpecialFormat) {
+                // 如果有任何标题需要特殊处理，全部使用 emoji 格式
+                li = `* [${EMOJI_LINK}](siyuan://blocks/${item.id}) ${item.parsedText}`;
+            } else {
+                // 否则全部使用简单链接格式
+                li = `* [${item.text}](siyuan://blocks/${item.id})`;
+            }
+            return `${'  '.repeat(item.depth)} ${li}`;
+        });
+
         tocs.push(`{: ${TOC_ATTR_NAME}="true" }`);
         callback(tocs);
     });
@@ -160,3 +194,4 @@ module.exports = class TocPlugin extends siyuan.Plugin {
         */
     }
 }
+
